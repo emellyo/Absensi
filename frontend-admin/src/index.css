@@ -1,0 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import 'tailwindcss';
+
+/*
+ * Palet mengikuti identitas warna Dexa Group (dexagroup.com):
+ * merah korporat dengan netral abu murni, bukan abu kebiruan.
+ * Nilai yang diambil langsung dari situs Dexa: #A82A22 (merah utama),
+ * #70271F (maroon), #414042, #666666, dan #F1F2F2.
+ */
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: #fdf2f1;
+  --color-brand-100: #fae0de;
+  --color-brand-200: #f4c4c0;
+  --color-brand-300: #e99b95;
+  --color-brand-400: #da6a63;
+  --color-brand-500: #c8433a;
+  --color-brand-600: #bb2820;
+  --color-brand-700: #a82a22;
+  --color-brand-800: #8b241d;
+  --color-brand-900: #70271f;
+
+  /* Netral Dexa. Dipakai menggantikan `slate` bawaan Tailwind yang kebiruan. */
+  --color-ink-50: #f7f7f7;
+  --color-ink-100: #ededee;
+  --color-ink-200: #e4e4e5;
+  --color-ink-300: #cfcfd1;
+  --color-ink-400: #9c9c9e;
+  --color-ink-500: #757577;
+  --color-ink-600: #666666;
+  --color-ink-700: #545456;
+  --color-ink-800: #414042;
+  --color-ink-900: #222222;
+
+  --color-surface: #f1f2f2;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-surface);
+    color: var(--color-ink-800);
+    font-family: var(--font-sans);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

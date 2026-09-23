@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "rootDir": "../..",
+    "outDir": "../../dist/apps/seed"
+  },
+  "include": ["src/**/*", "../api/src/**/*", "../../libs/**/*"],
+  "exclude": ["node_modules", "dist", "**/*spec.ts"]
+}

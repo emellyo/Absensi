@@ -1,0 +1,27 @@
+{
+  // Toolchain (NestJS 12 / Vite 8) butuh Node >= 20.19.
+  // Baris ini memastikan terminal VS Code memakai Node 24 yang portable,
+  // bukan Node lama yang mungkin lebih dulu ada di PATH sistem.
+  // Kalau Node kamu sudah >= 20.19 secara global, baris ini boleh dihapus.
+  "terminal.integrated.env.windows": {
+    "PATH": "${env:USERPROFILE}\\Applications\\node-v24.21.0-win-x64;${env:PATH}"
+  },
+
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[typescriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+
+  "typescript.tsdk": "backend/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/dist": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/package-lock.json": true
+  }
+}
