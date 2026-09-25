@@ -75,7 +75,7 @@ export function EmployeesPage() {
       <Card className="p-5">
         <form onSubmit={submitSearch} className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
-            <span className="pointer-events-none absolute top-1/2 left-3 -tranink-y-1/2 text-ink-400">
+            <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-400">
               <SearchIcon className="h-4 w-4" />
             </span>
             <input

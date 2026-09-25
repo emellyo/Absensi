@@ -27,7 +27,7 @@ export function Field({
 
       <div className="relative">
         {icon && (
-          <span className="pointer-events-none absolute top-1/2 left-3 -tranink-y-1/2 text-ink-400">
+          <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-400">
             {icon}
           </span>
         )}
