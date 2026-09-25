@@ -1,0 +1,4 @@
+# Script & config yang dieksekusi di Linux harus tetap LF walau di-checkout di Windows.
+*.sh text eol=lf
+deploy/** text eol=lf
+infra/** text eol=lf

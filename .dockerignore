@@ -1,0 +1,10 @@
+# Build context root hanya dipakai image `web` (dua frontend + config Nginx).
+.git
+backend
+infra
+scripts
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+!**/.env.example

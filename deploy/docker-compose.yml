@@ -1,0 +1,110 @@
+# Deploy produksi di VPS. Jalankan dari root repo:
+#   sh deploy/setup.sh
+#   docker compose -f deploy/docker-compose.yml up -d --build
+#   docker compose -f deploy/docker-compose.yml run --rm seed
+#
+# Hanya container `web` yang membuka port ke luar. MySQL, Redis, dan api
+# cuma bisa diakses dari jaringan internal Docker.
+
+name: dexa-absensi
+
+x-backend: &backend
+  build: ../backend
+  image: dexa-absensi-backend
+  restart: unless-stopped
+  environment:
+    NODE_ENV: production
+    API_PORT: 3000
+    LOGGING_PORT: 3001
+    CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+    DB_HOST: mysql
+    DB_PORT: 3306
+    DB_USER: dexa_app
+    DB_PASSWORD: ${DB_PASSWORD:?isi DB_PASSWORD di deploy/.env}
+    DB_MAIN_NAME: dexa_absensi
+    DB_LOGS_NAME: dexa_logs
+    JWT_SECRET: ${JWT_SECRET:?isi JWT_SECRET di deploy/.env}
+    JWT_EXPIRES_IN: 1d
+    REDIS_HOST: redis
+    REDIS_PORT: 6379
+    UPLOAD_DIR: uploads
+    MAX_UPLOAD_SIZE_MB: 2
+  depends_on:
+    mysql:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?isi MYSQL_ROOT_PASSWORD di deploy/.env}
+      MYSQL_DATABASE: dexa_absensi
+      MYSQL_USER: dexa_app
+      MYSQL_PASSWORD: ${DB_PASSWORD:?isi DB_PASSWORD di deploy/.env}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ../infra/mysql-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # 127.0.0.1 (TCP) sengaja: saat inisialisasi pertama MySQL hanya membuka
+      # socket, jadi healthcheck baru lolos setelah init script selesai.
+      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -uroot -p"$$MYSQL_ROOT_PASSWORD" --silent']
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory-policy noeviction
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    <<: *backend
+    command: ['node', 'dist/apps/api/main']
+    volumes:
+      - uploads:/app/uploads
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/health']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  logging-service:
+    <<: *backend
+    command: ['node', 'dist/apps/logging-service/main']
+
+  # Tidak ikut `up`. Jalankan manual: docker compose ... run --rm seed
+  seed:
+    <<: *backend
+    command: ['node', 'dist/apps/seed/main']
+    restart: 'no'
+    profiles: [tools]
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/web/Dockerfile
+    image: dexa-absensi-web
+    restart: unless-stopped
+    ports:
+      - '${EMPLOYEE_PORT:-80}:80'
+      - '${ADMIN_PORT:-8080}:8080'
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  mysql-data:
+  redis-data:
+  uploads:
