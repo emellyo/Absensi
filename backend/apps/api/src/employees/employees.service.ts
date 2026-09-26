@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { ActivityAction, ActivityChange, Role } from '@app/contracts';
 import { hash } from 'bcryptjs';
-import { Like, Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { ActivityService } from '../activity/activity.service.js';
 import { AuthenticatedUser } from '../common/auth.types.js';
 import { toEmployeeResponse } from '../common/employee.presenter.js';
@@ -14,6 +14,25 @@ import { Employee } from '../database/entities/employee.entity.js';
 import { CreateEmployeeDto } from './dto/create-employee.dto.js';
 import { ListEmployeesDto } from './dto/list-employees.dto.js';
 import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
+
+const STATUS_LABELS = [
+  { labels: ['aktif', 'active'], column: 'isActive', value: true },
+  {
+    labels: ['nonaktif', 'non aktif', 'inactive'],
+    column: 'isActive',
+    value: false,
+  },
+  { labels: ['hrd', 'admin'], column: 'role', value: Role.ADMIN },
+] as const;
+
+/**
+ * "akt" cocok dengan "aktif". Minimal 3 huruf supaya ketikan pendek seperti
+ * "a" tidak ikut menarik semua karyawan aktif. "nonaktif" tidak memicu "aktif"
+ * karena yang dicek adalah awalan label.
+ */
+function matchesLabel(label: string, keyword: string): boolean {
+  return keyword.length >= 3 && label.startsWith(keyword);
+}
 
 @Injectable()
 export class EmployeesService {
@@ -28,16 +47,38 @@ export class EmployeesService {
     const limit = query.limit ?? 25;
     const search = query.search?.trim();
 
-    const where = search
-      ? [{ name: Like(`%${search}%`) }, { email: Like(`%${search}%`) }]
-      : {};
+    const builder = this.employees
+      .createQueryBuilder('employee')
+      .orderBy('employee.name', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit);
 
-    const [rows, total] = await this.employees.findAndCount({
-      where,
-      order: { name: 'ASC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    if (search) {
+      // Escape wildcard LIKE supaya "%" atau "_" dari user dicari apa adanya.
+      const pattern = `%${search.replace(/[\\%_]/g, '\\$&')}%`;
+      const keyword = search.toLowerCase();
+
+      builder.where(
+        new Brackets((qb) => {
+          qb.where('employee.name LIKE :pattern', { pattern })
+            .orWhere('employee.email LIKE :pattern')
+            .orWhere('employee.position LIKE :pattern')
+            .orWhere('employee.phone LIKE :pattern');
+
+          // Kolom Status di tabel admin menampilkan label, bukan nilai mentah,
+          // jadi label itu dipetakan balik ke kolom database.
+          STATUS_LABELS.forEach(({ labels, column, value }, index) => {
+            if (labels.some((label) => matchesLabel(label, keyword))) {
+              qb.orWhere(`employee.${column} = :status${index}`, {
+                [`status${index}`]: value,
+              });
+            }
+          });
+        }),
+      );
+    }
+
+    const [rows, total] = await builder.getManyAndCount();
 
     return {
       page,

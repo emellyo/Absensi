@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import type { JwtSignOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Employee } from '../database/entities/employee.entity.js';
@@ -17,7 +18,14 @@ import { JwtStrategy } from './jwt.strategy.js';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.getOrThrow<string>('JWT_SECRET'),
-        signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN', '1d') },
+        signOptions: {
+          // Nilai dari .env bertipe string biasa, sedangkan expiresIn hanya
+          // menerima format durasi ("1d", "2h"). Formatnya dijaga lewat .env.
+          expiresIn: config.get(
+            'JWT_EXPIRES_IN',
+            '1d',
+          ) as JwtSignOptions['expiresIn'],
+        },
       }),
     }),
   ],

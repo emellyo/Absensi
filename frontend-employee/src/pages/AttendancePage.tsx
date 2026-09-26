@@ -4,7 +4,7 @@ import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { api, errorMessage } from '../lib/api'
-import { formatDateLong, formatTime } from '../lib/format'
+import { formatDateLong, formatDateShort, formatTime } from '../lib/format'
 import type { TodayAttendance } from '../types'
 
 type Feedback = { tone: 'success' | 'error'; message: string } | null
@@ -104,6 +104,11 @@ export function AttendancePage() {
               <p className="mt-1.5 text-2xl font-extrabold tabular-nums text-ink-900">
                 {formatTime(today?.masuk ?? null)}
               </p>
+              {today?.masuk && (
+                <p className="mt-0.5 text-xs font-medium text-ink-500">
+                  {formatDateShort(today.date)}
+                </p>
+              )}
             </div>
 
             <div className="rounded-xl border border-ink-200 bg-ink-50 p-4">
@@ -116,6 +121,11 @@ export function AttendancePage() {
               <p className="mt-1.5 text-2xl font-extrabold tabular-nums text-ink-900">
                 {formatTime(today?.pulang ?? null)}
               </p>
+              {today?.pulang && (
+                <p className="mt-0.5 text-xs font-medium text-ink-500">
+                  {formatDateShort(today.date)}
+                </p>
+              )}
             </div>
           </div>
 

@@ -3,7 +3,10 @@ import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class ListEmployeesDto {
-  @ApiPropertyOptional({ description: 'Cari berdasarkan nama atau email' })
+  @ApiPropertyOptional({
+    description:
+      'Cari nama, email, posisi, no. HP, atau status (aktif/nonaktif/HRD)',
+  })
   @IsOptional()
   @IsString()
   search?: string;

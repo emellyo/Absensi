@@ -82,7 +82,7 @@ export function EmployeesPage() {
               type="search"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Cari nama atau email karyawan"
+              placeholder="Cari nama, email, posisi, no. HP, atau status"
               aria-label="Cari karyawan"
               className="min-h-11 w-full rounded-xl border border-ink-300 bg-white pr-3.5 pl-9 text-sm text-ink-800 transition-colors placeholder:text-ink-400 focus:border-brand-500"
             />

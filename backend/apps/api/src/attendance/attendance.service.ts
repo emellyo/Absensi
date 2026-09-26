@@ -8,6 +8,7 @@ import { AttendanceStatus } from '@app/contracts';
 import { Between, Repository } from 'typeorm';
 import { AuthenticatedUser } from '../common/auth.types.js';
 import {
+  formatLocalDateLong,
   startOfCurrentMonth,
   toLocalDate,
   toLocalTime,
@@ -196,15 +197,14 @@ export class AttendanceService {
       }),
     );
 
+    const label = status === AttendanceStatus.MASUK ? 'masuk' : 'pulang';
+
     return {
       id: saved.id,
       date: saved.attendanceDate,
       time: saved.attendanceTime,
       status: saved.status,
-      message:
-        status === AttendanceStatus.MASUK
-          ? `Absen masuk tercatat pukul ${attendanceTime}`
-          : `Absen pulang tercatat pukul ${attendanceTime}`,
+      message: `Absen ${label} tercatat ${formatLocalDateLong(attendanceDate)} pukul ${attendanceTime}`,
     };
   }
 

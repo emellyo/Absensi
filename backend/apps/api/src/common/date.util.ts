@@ -34,3 +34,26 @@ export function startOfCurrentMonth(now: Date = new Date()): string {
   const p = partsOf(now);
   return `${p.year}-${p.month}-01`;
 }
+
+const DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const MONTHS = [
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
+];
+
+/** '2026-09-26' -> 'Sabtu, 26 September 2026' */
+export function formatLocalDateLong(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  return `${DAYS[weekday]}, ${day} ${MONTHS[month - 1]} ${year}`;
+}

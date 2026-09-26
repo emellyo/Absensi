@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button'
 import { Card, CardHeader } from '../components/ui/Card'
 import { Field } from '../components/ui/Field'
 import { api, errorMessage, photoSrc } from '../lib/api'
+import { compressImage } from '../lib/image'
 import type { Profile } from '../types'
 
 type Feedback = { tone: 'success' | 'error'; message: string } | null
@@ -60,10 +61,11 @@ export function ProfilePage() {
 
     setPhotoFeedback(null)
     setPhotoSaving(true)
-    const form = new FormData()
-    form.append('photo', file)
-
     try {
+      const form = new FormData()
+      form.append('photo', await compressImage(file))
+
+
       const { data } = await api.post<Profile>('/profile/photo', form)
       setProfile(data)
       setPhotoFeedback({ tone: 'success', message: 'Foto berhasil diperbarui' })
