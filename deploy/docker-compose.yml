@@ -4,7 +4,8 @@
 #   docker compose -f deploy/docker-compose.yml run --rm seed
 #
 # Hanya container `web` yang membuka port ke luar. MySQL, Redis, dan api
-# cuma bisa diakses dari jaringan internal Docker.
+# cuma bisa diakses dari jaringan internal Docker (MySQL juga dari localhost
+# VPS, untuk SSH tunnel).
 
 name: dexa-absensi
 
@@ -44,6 +45,10 @@ services:
       MYSQL_DATABASE: dexa_absensi
       MYSQL_USER: dexa_app
       MYSQL_PASSWORD: ${DB_PASSWORD:?isi DB_PASSWORD di deploy/.env}
+    # Hanya di localhost VPS, tidak terbuka ke internet. Akses dari laptop
+    # (DBeaver dsb.) lewat SSH tunnel ke 127.0.0.1:3307.
+    ports:
+      - '127.0.0.1:3307:3306'
     volumes:
       - mysql-data:/var/lib/mysql
       - ../infra/mysql-init:/docker-entrypoint-initdb.d:ro
