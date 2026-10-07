@@ -120,6 +120,31 @@ cd frontend-admin    && npm install && npm run dev   # http://localhost:5174
 
 ---
 
+## Deploy (Docker Compose)
+
+Seluruh stack (MySQL, Redis, api, logging-service, Nginx + kedua frontend) dijalankan dari `deploy/docker-compose.yml`. Hanya Nginx yang membuka port ke luar:
+
+| Port | Isi | Server demo |
+|---|---|---|
+| `8081` | Aplikasi karyawan | <http://43.157.228.131:8081> |
+| `8082` | Portal admin HRD | <http://43.157.228.131:8082> |
+
+Port diatur lewat `EMPLOYEE_PORT` dan `ADMIN_PORT` di `deploy/.env`.
+
+Nginx meneruskan `/api`, `/uploads`, dan `/socket.io` ke container `api`, sehingga frontend memanggil API di origin yang sama. Build frontend tidak perlu tahu IP/domain server, dan MySQL/Redis tidak terekspos ke internet (MySQL hanya dibuka di `127.0.0.1:3307` milik server, untuk diakses lewat SSH tunnel).
+
+```bash
+git clone https://github.com/emellyo/Absensi.git && cd Absensi
+sh deploy/setup.sh                                        # generate deploy/.env (password & JWT secret acak)
+# ubah EMPLOYEE_PORT=8081 dan ADMIN_PORT=8082 di deploy/.env (bawaan setup.sh: 80 dan 8080)
+docker compose -f deploy/docker-compose.yml up -d --build
+docker compose -f deploy/docker-compose.yml run --rm seed # data demo, cukup sekali
+```
+
+Swagger tersedia di <http://43.157.228.131:8081/api/docs> (atau `http://<ip-server>:<EMPLOYEE_PORT>/api/docs`).
+
+---
+
 ## Struktur Database
 
 **`dexa_absensi`** — database aplikasi
@@ -168,7 +193,7 @@ Semua endpoint berprefiks `/api`. Selain `login`, semuanya butuh header `Authori
 | Method | Endpoint | Akses | Keterangan |
 |---|---|---|---|
 | POST | `/auth/login` | publik | Login dengan email perusahaan + password |
-| GET | `/auth/me` | login | Identitas dari token aktif |
+| GET | `/auth/me` | login | Identitas dari token aktif (id, nama, email, posisi, role), sama dengan `user` di respons login |
 | GET | `/profile` | karyawan | Nama, email, foto, posisi, no. HP |
 | PATCH | `/profile` | karyawan | Ubah nomor handphone |
 | POST | `/profile/photo` | karyawan | Ubah foto (multipart, maks 2 MB, JPG/PNG/WEBP) |
