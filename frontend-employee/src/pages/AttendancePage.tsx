@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react'
+﻿import axios from 'axios'
+import { useEffect, useRef, useState } from 'react'
 import { SunriseIcon, SunsetIcon } from '../components/Icons'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
@@ -39,6 +40,9 @@ export function AttendancePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<'masuk' | 'pulang' | null>(null)
   const [feedback, setFeedback] = useState<Feedback>(null)
+  // Guard sinkron: state `saving` baru berlaku setelah re-render, jadi klik
+  // kedua yang sangat cepat bisa lolos dan mengirim POST ganda.
+  const submitting = useRef(false)
 
   const refresh = () =>
     api.get<TodayAttendance>('/attendance/today').then((r) => setToday(r.data))
@@ -50,6 +54,8 @@ export function AttendancePage() {
   }, [])
 
   const submit = async (type: 'masuk' | 'pulang') => {
+    if (submitting.current) return
+    submitting.current = true
     setFeedback(null)
     setSaving(type)
     try {
@@ -59,7 +65,13 @@ export function AttendancePage() {
       await refresh()
     } catch (err) {
       setFeedback({ tone: 'error', message: errorMessage(err) })
+      // 409 berarti absen sudah tercatat (dari tab/perangkat lain), jadi status
+      // disinkronkan supaya tombol ikut berubah. Gagal refresh tidak menimpa pesan 409.
+      if (axios.isAxiosError(err) && err.response?.status === 409) {
+        await refresh().catch(() => undefined)
+      }
     } finally {
+      submitting.current = false
       setSaving(null)
     }
   }
