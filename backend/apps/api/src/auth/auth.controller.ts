@@ -23,6 +23,6 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Identitas dari token yang sedang dipakai' })
   me(@CurrentUser() user: AuthenticatedUser) {
-    return user;
+    return this.authService.me(user.id);
   }
 }

@@ -9,11 +9,14 @@ import { hash } from 'bcryptjs';
 import { Brackets, Repository } from 'typeorm';
 import { ActivityService } from '../activity/activity.service.js';
 import { AuthenticatedUser } from '../common/auth.types.js';
+import { isUniqueViolation } from '../common/db-error.util.js';
 import { toEmployeeResponse } from '../common/employee.presenter.js';
 import { Employee } from '../database/entities/employee.entity.js';
 import { CreateEmployeeDto } from './dto/create-employee.dto.js';
 import { ListEmployeesDto } from './dto/list-employees.dto.js';
 import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
+
+const EMAIL_TAKEN_MESSAGE = 'Email perusahaan sudah terdaftar';
 
 const STATUS_LABELS = [
   { labels: ['aktif', 'active'], column: 'isActive', value: true },
@@ -97,19 +100,29 @@ export class EmployeesService {
     const email = dto.email.toLowerCase().trim();
 
     if (await this.employees.existsBy({ email })) {
-      throw new ConflictException('Email perusahaan sudah terdaftar');
+      throw new ConflictException(EMAIL_TAKEN_MESSAGE);
     }
 
-    const saved = await this.employees.save(
-      this.employees.create({
-        name: dto.name.trim(),
-        email,
-        passwordHash: await hash(dto.password, 10),
-        position: dto.position.trim(),
-        phone: dto.phone ?? null,
-        role: dto.role ?? Role.EMPLOYEE,
-      }),
-    );
+    const employee = this.employees.create({
+      name: dto.name.trim(),
+      email,
+      passwordHash: await hash(dto.password, 10),
+      position: dto.position.trim(),
+      phone: dto.phone ?? null,
+      role: dto.role ?? Role.EMPLOYEE,
+    });
+
+    let saved: Employee;
+    try {
+      saved = await this.employees.save(employee);
+    } catch (error) {
+      // Dua request dengan email sama bisa sama-sama lolos existsBy;
+      // yang kalah ditolak unique index dan dijawab 409, bukan 500.
+      if (isUniqueViolation(error)) {
+        throw new ConflictException(EMAIL_TAKEN_MESSAGE);
+      }
+      throw error;
+    }
 
     await this.activity.record({
       action: ActivityAction.EMPLOYEE_CREATED,

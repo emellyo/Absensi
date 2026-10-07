@@ -7,6 +7,17 @@ import { JwtPayload } from '../common/auth.types.js';
 import { Employee } from '../database/entities/employee.entity.js';
 import { LoginDto } from './dto/login.dto.js';
 
+/** Bentuk `user` yang sama untuk respons login dan /auth/me. */
+function toAuthUser(employee: Employee) {
+  return {
+    id: employee.id,
+    name: employee.name,
+    email: employee.email,
+    position: employee.position,
+    role: employee.role,
+  };
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -37,13 +48,17 @@ export class AuthService {
 
     return {
       accessToken: await this.jwt.signAsync(payload),
-      user: {
-        id: employee.id,
-        name: employee.name,
-        email: employee.email,
-        position: employee.position,
-        role: employee.role,
-      },
+      user: toAuthUser(employee),
     };
+  }
+
+  async me(userId: number) {
+    const employee = await this.employees.findOne({ where: { id: userId } });
+
+    if (!employee) {
+      throw new UnauthorizedException('Akun tidak aktif atau tidak ditemukan');
+    }
+
+    return toAuthUser(employee);
   }
 }

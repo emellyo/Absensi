@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { AttendanceStatus } from '@app/contracts';
 import { Between, Repository } from 'typeorm';
 import { AuthenticatedUser } from '../common/auth.types.js';
+import { isUniqueViolation } from '../common/db-error.util.js';
 import {
   formatLocalDateLong,
   startOfCurrentMonth,
@@ -175,29 +176,36 @@ export class AttendanceService {
     const attendanceDate = toLocalDate(now);
     const attendanceTime = toLocalTime(now);
 
+    const label = status === AttendanceStatus.MASUK ? 'masuk' : 'pulang';
+    const duplicateMessage = `Anda sudah melakukan absen ${label} hari ini`;
+
     const existing = await this.attendances.findOne({
       where: { employeeId: user.id, attendanceDate, status },
     });
 
     if (existing) {
-      throw new ConflictException(
-        status === AttendanceStatus.MASUK
-          ? 'Anda sudah melakukan absen masuk hari ini'
-          : 'Anda sudah melakukan absen pulang hari ini',
-      );
+      throw new ConflictException(duplicateMessage);
     }
 
-    const saved = await this.attendances.save(
-      this.attendances.create({
-        employeeId: user.id,
-        attendanceDate,
-        attendanceTime,
-        status,
-        recordedAt: now,
-      }),
-    );
+    const attendance = this.attendances.create({
+      employeeId: user.id,
+      attendanceDate,
+      attendanceTime,
+      status,
+      recordedAt: now,
+    });
 
-    const label = status === AttendanceStatus.MASUK ? 'masuk' : 'pulang';
+    let saved: Attendance;
+    try {
+      saved = await this.attendances.save(attendance);
+    } catch (error) {
+      // Dua request paralel bisa sama-sama lolos findOne; yang kalah
+      // ditolak unique index uq_attendance_per_day dan dijawab 409, bukan 500.
+      if (isUniqueViolation(error)) {
+        throw new ConflictException(duplicateMessage);
+      }
+      throw error;
+    }
 
     return {
       id: saved.id,
